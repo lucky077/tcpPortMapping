@@ -29,9 +29,11 @@ func main() {
 	serve(28999, func(conn net.Conn) {
 		log.Info(conn.RemoteAddr().String() + " connected")
 	}, func(conn net.Conn, data []byte) {
-		println(len(data))
-		println((data[0]))
-		println(string(data[1:]))
+		head, body := util.GetData(data)
+
+		println(head)
+		println(body)
+
 	})
 }
 

@@ -15,8 +15,8 @@ func ToBytes(head byte, body string) []byte {
 
 	return buf
 }
-func GetData() {
-
+func GetData(data []byte) (byte, string) {
+	return data[0], string(data[1:])
 }
 
 func ErrCheck(err error) {
