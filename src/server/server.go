@@ -26,7 +26,7 @@ func main() {
 	log.Init()
 
 	fmt.Println("server run")
-	serve(28999, func(conn net.Conn) {
+	serveTcp(28999, func(conn net.Conn) {
 		log.Info(conn.RemoteAddr().String() + " connected")
 	}, func(conn net.Conn, data []byte) {
 		head, body := util.GetData(data)
@@ -37,7 +37,7 @@ func main() {
 	})
 }
 
-func serve(port int, cb func(conn net.Conn), cb2 func(conn net.Conn, data []byte)) {
+func serveTcp(port int, cb func(conn net.Conn), cb2 func(conn net.Conn, data []byte)) {
 
 	listener, e := net.Listen("tcp", ":"+strconv.Itoa(port))
 	util.ErrCheck(e)
@@ -62,4 +62,31 @@ func serve(port int, cb func(conn net.Conn), cb2 func(conn net.Conn, data []byte
 		}
 
 	}
+}
+
+func serveUdp(port int, cb func(conn net.Conn), cb2 func(conn net.Conn, data []byte)) {
+
+	addr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(port))
+	util.ErrCheck(err)
+
+	conn, err := net.ListenUDP("udp", addr)
+
+	util.ErrCheck(err)
+
+	if cb != nil {
+		cb(conn)
+	}
+
+	buf := make([]byte, 1024)
+
+	for {
+		n, e := conn.Read(buf)
+		if e != nil {
+			util.ErrCheck(e)
+			break
+		}
+
+		go cb2(conn, buf[:n])
+	}
+
 }
