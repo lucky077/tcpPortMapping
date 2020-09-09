@@ -16,8 +16,7 @@ import (
 const (
 	LocalHost = "127.0.0.1"
 	//LocalHost  = "192.168.1.106"
-	//RemoteHost  = LocalHost
-	RemoteHost = "118.25.13.237"
+	RemoteHost = LocalHost
 	Port       = 28999
 	HeadSize   = 4
 	BufSize    = 2048
