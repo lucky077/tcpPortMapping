@@ -2,16 +2,17 @@ package util
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"os"
 )
 
 func ToBytes(head byte, body string) []byte {
-	buf := make([]byte, len(body)+1)
+	buf := make([]byte, len(body)+5)
+	binary.BigEndian.PutUint32(buf, uint32(len(body)+1))
+	buf[4] = head
 
-	buf[0] = head
-
-	copy(buf[1:], body)
+	copy(buf[5:], body)
 
 	return buf
 }
