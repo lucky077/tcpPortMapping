@@ -117,9 +117,14 @@ func run() {
 			go connectUDP(addressStr(LocalHost, localPort), func(conn net.Conn) {
 				local <- conn
 
-				pcMap.Store(body, conn)
+				conn0 := <-remote
+				if conn0 == nil {
+					conn.Close()
+					return
+				}
+				lrMap.Store(conn, conn0)
 
-				lrMap.Store(conn, <-remote)
+				pcMap.Store(body, conn)
 
 			}, func(conn net.Conn, data []byte) {
 				//fmt.Println(string(data))
@@ -129,9 +134,15 @@ func run() {
 			})
 
 			go connectUDP(addressStr(RemoteHost, body), func(conn net.Conn) {
-				rlMap.Store(conn, <-local)
+
+				conn0 := <-local
 
 				remote <- conn
+				if conn == nil {
+					return
+				}
+
+				rlMap.Store(conn, conn0)
 
 				conn.Write([]byte(port))
 			}, func(conn net.Conn, data []byte) {
@@ -209,7 +220,12 @@ func connectTCP(addr string, cb func(conn net.Conn), cb2 func(conn net.Conn, dat
 	cb(conn)
 
 	defer func() {
+		recover()
+		if conn == nil {
+			return
+		}
 		conn0, _ := rlMap.Load(conn)
+		conn.Close()
 		if conn0 != nil {
 			rlMap.Delete(conn)
 			conn0.(net.Conn).Close()
@@ -232,6 +248,10 @@ func connectTCP(addr string, cb func(conn net.Conn), cb2 func(conn net.Conn, dat
 			if err.Error() == "EOF" {
 				connNew, err := net.Dial("tcp", addr)
 				util.ErrCheck(err)
+
+				if connNew == nil {
+					return
+				}
 
 				conn0, _ := lrMap.Load(conn)
 				conn = connNew
