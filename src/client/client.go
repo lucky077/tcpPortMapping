@@ -72,10 +72,13 @@ func run() {
 		case 21:
 			conn, _ := pcMap.Load(body)
 			if conn != nil {
-				conn.(net.Conn).Close()
+				pcMap.Delete(body)
 				conn0, _ := lrMap.Load(conn)
+				conn.(net.Conn).Close()
 				if conn0 != nil {
 					conn0.(net.Conn).Close()
+					lrMap.Delete(conn)
+					rlMap.Delete(conn0)
 				}
 			}
 			break
@@ -206,15 +209,15 @@ func connectTCP(addr string, cb func(conn net.Conn), cb2 func(conn net.Conn, dat
 	cb(conn)
 
 	defer func() {
-		if recover() != nil {
-			conn0, _ := rlMap.Load(conn)
+		conn0, _ := rlMap.Load(conn)
+		if conn0 != nil {
+			rlMap.Delete(conn)
+			conn0.(net.Conn).Close()
+		} else {
+			conn0, _ := lrMap.Load(conn)
 			if conn0 != nil {
+				lrMap.Delete(conn)
 				conn0.(net.Conn).Close()
-			} else {
-				conn0, _ := lrMap.Load(conn)
-				if conn0 != nil {
-					conn0.(net.Conn).Close()
-				}
 			}
 		}
 	}()
@@ -254,6 +257,7 @@ func connectUDP(addr string, cb func(conn net.Conn), cb2 func(conn net.Conn, dat
 
 	conn, err := net.Dial("udp", addr)
 	util.ErrCheck(err)
+	defer conn.Close()
 	cb(conn)
 
 	for {
